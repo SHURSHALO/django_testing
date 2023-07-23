@@ -38,27 +38,20 @@ def test_home_page_news_order(client):
     assert news_list[2] == news3
 
 
-def test_comments_order_on_news_detail(
-    client, comment, news, pk_for_kwargs, author
-):
-    comment1 = Comment.objects.create(
-        news=news,
-        author=author,
-        text='Комментарий 1',
-        created=date(1945, 9, 2),
-    )
-    comment2 = Comment.objects.create(
-        news=news,
-        author=author,
-        text='Комментарий 2',
-        created=date(2001, 9, 11),
-    )
-    comment3 = Comment.objects.create(
-        news=news,
-        author=author,
-        text='Комментарий 3',
-        created=date(1703, 5, 16),
-    )
+def test_comments_order_on_news_detail(client, comment, news, pk_for_kwargs, author):
+    comments_data = [
+        {'text': 'Комментарий 1', 'created': date(1945, 9, 2)},
+        {'text': 'Комментарий 2', 'created': date(2001, 9, 11)},
+        {'text': 'Комментарий 3', 'created': date(1703, 5, 16)},
+    ]
+    
+    for comment_data in comments_data:
+        Comment.objects.create(
+            news=news,
+            author=author,
+            text=comment_data['text'],
+            created=comment_data['created'],
+        )
 
     url = reverse('news:detail', kwargs=pk_for_kwargs)
     response = client.get(url)
