@@ -60,6 +60,8 @@ class TestCommentEditDelete(TestCase):
         self.assertEqual(comments_count, 1)
 
     def test_author_can_edit_comment(self):
+        comments_count = Note.objects.count()
+
         response = self.author_client.post(self.edit_url, data=self.form_data)
         self.assertRedirects(response, self.url_to_success)
         self.note.refresh_from_db()
@@ -67,7 +69,12 @@ class TestCommentEditDelete(TestCase):
         self.assertEqual(self.note.title, self.NOTE_TITLE_NEW)
         self.assertEqual(self.note.slug, self.NOTE_SLUG_NEW)
 
+        updated_comment_count = Note.objects.count()
+        self.assertEqual(comments_count, updated_comment_count)
+
     def test_user_cant_edit_comment_of_another_user(self):
+        comments_count = Note.objects.count()
+
         response = self.reader_client.post(self.edit_url, data=self.form_data)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.note.refresh_from_db()
@@ -75,11 +82,15 @@ class TestCommentEditDelete(TestCase):
         self.assertEqual(self.note.title, self.NOTE_TITLE)
         self.assertEqual(self.note.slug, self.NOTE_SLUG)
 
+        updated_comment_count = Note.objects.count()
+        self.assertEqual(comments_count, updated_comment_count)
+
     def test_logged_in_user_can_create_note(self):
+        Note.objects.all().delete()
         response = self.author_client.post(self.add_url, data=self.form_data)
         self.assertRedirects(response, self.url_to_success)
         note_count = Note.objects.count()
-        self.assertEqual(note_count, 2)
+        self.assertEqual(note_count, 1)
 
     def test_anonymous_user_cannot_create_note(self):
         response = self.client.post(self.add_url, data=self.form_data)

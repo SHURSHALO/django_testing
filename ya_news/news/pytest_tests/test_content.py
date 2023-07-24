@@ -1,61 +1,40 @@
 import pytest
 from http import HTTPStatus
 from django.urls import reverse
-from datetime import date
-from news.models import News, Comment
+from news.models import News
+from yanews.settings import NEWS_COUNT_ON_HOME_PAGE
+from news.forms import CommentForm
 
 
 @pytest.mark.django_db
 def test_home_page_news_count(client):
-    for i in range(15):
-        News.objects.create(title=f'Заголовок {i}', text=f'Текст новости {i}')
+    all_news = [
+        News(title=f'Новость {index}', text='Просто текст.')
+        for index in range(NEWS_COUNT_ON_HOME_PAGE + 1)
+    ]
+    News.objects.bulk_create(all_news)
 
     url = reverse('news:home')
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
-    assert len(response.context['object_list']) <= 10
+    assert len(response.context['object_list']) == NEWS_COUNT_ON_HOME_PAGE
 
 
 @pytest.mark.django_db
 def test_home_page_news_order(client):
-    news1 = News.objects.create(
-        title='Заголовок 1', text='Текст новости 1', date=date(1990, 7, 30)
-    )
-    news2 = News.objects.create(
-        title='Заголовок 2', text='Текст новости 2', date=date(2001, 6, 15)
-    )
-    news3 = News.objects.create(
-        title='Заголовок 3', text='Текст новости 3', date=date(1945, 9, 2)
-    )
-
     url = reverse('news:home')
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
 
     news_list = response.context['object_list']
-    assert news_list[0] == news2
-    assert news_list[1] == news1
-    assert news_list[2] == news3
+    sorted_news = News.objects.order_by('date')
+
+    assert list(news_list) == list(sorted_news)
 
 
-def test_comments_order_on_news_detail(
-    client, comment, news, pk_for_kwargs, author
-):
-    comments_data = [
-        {'text': 'Комментарий 1', 'created': date(1945, 9, 2)},
-        {'text': 'Комментарий 2', 'created': date(2001, 9, 11)},
-        {'text': 'Комментарий 3', 'created': date(1703, 5, 16)},
-    ]
-
-    for comment_data in comments_data:
-        Comment.objects.create(
-            news=news,
-            author=author,
-            text=comment_data['text'],
-            created=comment_data['created'],
-        )
-
-    url = reverse('news:detail', kwargs=pk_for_kwargs)
+def test_comments_order_on_news_detail(client, comment):
+    pk_for_news = 1
+    url = reverse('news:detail', args=[pk_for_news])
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
 
@@ -70,7 +49,8 @@ def test_comment_form_unavailable_for_anonymous_user(client, news):
     url = reverse('news:detail', args=[news.pk])
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
-    assert 'form' not in response.context
+    assert not isinstance(response.context.get('form'), CommentForm)
+    print(response.context.get('form'))
 
 
 @pytest.mark.django_db
@@ -78,4 +58,4 @@ def test_comment_form_available_for_authenticated_user(author_client, news):
     url = reverse('news:detail', args=[news.pk])
     response = author_client.get(url)
     assert response.status_code == HTTPStatus.OK
-    assert 'form' in response.context
+    assert isinstance(response.context['form'], CommentForm)

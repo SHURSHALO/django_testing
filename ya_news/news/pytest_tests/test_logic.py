@@ -7,37 +7,33 @@ from news.models import Comment
 @pytest.mark.django_db
 def test_anonymous_user_cannot_comment(client, news):
     url = reverse('news:detail', args=[news.pk])
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
-    assert 'form' not in response.context
+    response = client.post(url)
 
-    response = client.post(
-        url, data={'text': 'Комментарий от анонимного пользователя'}
-    )
+    response = client.post(url, data={'text': 'Комментарий от анонима'})
     assert response.status_code == HTTPStatus.FOUND
 
     assert not Comment.objects.filter(
-        text='Комментарий от анонимного пользователя'
+        news=news.pk, text='Комментарий от анонима'
     ).exists()
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_comment(author_client, news):
+def test_authenticated_user_can_comment(author_client, news, author):
     url = reverse('news:detail', args=[news.pk])
-    response = author_client.get(url)
-    assert response.status_code == HTTPStatus.OK
-    assert 'form' in response.context
+    response = author_client.post(url)
 
     response = author_client.post(
         url, data={'text': 'Комментарий от пользователя'}
     )
     assert response.status_code == HTTPStatus.FOUND
 
-    assert Comment.objects.filter(text='Комментарий от пользователя').exists()
+    assert Comment.objects.filter(
+        news=news.pk, author=author, text='Комментарий от пользователя'
+    ).exists()
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_comment(author_client, news):
+def test_comment_warring_text_for_authenticated_user(author_client, news):
     url = reverse('news:detail', args=[news.pk])
 
     response = author_client.post(url, data={'text': 'негодяй редиска'})
@@ -49,18 +45,24 @@ def test_authenticated_user_can_comment(author_client, news):
 
 
 @pytest.mark.django_db
-def test_authenticated_user_can_edit_comment(author_client, comment):
+def test_authenticated_user_can_edit_comment(author_client, comment, author):
     url = reverse('news:edit', kwargs={'pk': comment.pk})
-    response = author_client.get(url)
-    assert response.status_code == HTTPStatus.OK
-    assert 'form' in response.context
+    response = author_client.post(url)
 
-    new_text = 'Что то тут не чисто'
-    response = author_client.post(url, data={'text': new_text})
+    response = author_client.post(
+        url,
+        data={
+            'comment': comment.pk,
+            'author': author,
+            'text': 'Коммент отредоктироваван атором',
+        },
+    )
     assert response.status_code == HTTPStatus.FOUND
 
     comment.refresh_from_db()
-    assert comment.text == new_text
+    assert Comment.objects.filter(
+        news=comment.pk, author=author, text='Коммент отредоктироваван атором'
+    ).exists()
 
 
 @pytest.mark.django_db

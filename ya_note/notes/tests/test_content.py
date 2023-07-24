@@ -1,10 +1,9 @@
-
 from django.urls import reverse
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-
+from http import HTTPStatus
 from notes.models import Note
-
+from notes.forms import NoteForm
 
 User = get_user_model()
 
@@ -23,7 +22,7 @@ class TestContent(TestCase):
         self.client.force_login(self.author)
 
         response = self.client.get(self.LIST_URL)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         object_list = response.context['object_list']
         self.assertIn(self.note, object_list)
@@ -37,7 +36,7 @@ class TestContent(TestCase):
         )
         self.client.force_login(another_user)
         response = self.client.get(self.LIST_URL)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
         object_list = response.context['object_list']
         self.assertIn(another_note, object_list)
@@ -48,25 +47,27 @@ class TestEditNote(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Тесла')
-        cls.news = Note.objects.create(
+        cls.note = Note.objects.create(
             title='Тестовая новость',
             text='Просто текст.',
             slug=1,
             author=cls.author,
         )
-        cls.edit_url = reverse('notes:edit', args=(cls.news.id,))
+        cls.edit_url = reverse('notes:edit', args=(cls.note.id,))
 
     def test_authorized_client_has_form(self):
         self.client.force_login(self.author)
         response = self.client.get(self.edit_url)
         self.assertIn('form', response.context)
+        form = response.context['form']
+        self.assertTrue(isinstance(form, NoteForm))
 
 
 class TestAddNote(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.author = User.objects.create(username='Пух')
-        cls.news = Note.objects.create(
+        cls.note = Note.objects.create(
             title='Тестовая новость', text='Просто текст.', author=cls.author
         )
         cls.add_url = reverse('notes:add')
@@ -75,3 +76,5 @@ class TestAddNote(TestCase):
         self.client.force_login(self.author)
         response = self.client.get(self.add_url)
         self.assertIn('form', response.context)
+        form = response.context['form']
+        self.assertTrue(isinstance(form, NoteForm))
