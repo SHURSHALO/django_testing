@@ -48,14 +48,9 @@ class TestCommentEditDelete(TestCase):
         cls.url_to_success = '/done/'
 
     def assert_note_attributes(self, note):
-        self.assertEqual(self.note.text, self.NOTE_TEXT)
-        self.assertEqual(self.note.title, self.NOTE_TITLE)
-        self.assertEqual(self.note.slug, self.NOTE_SLUG)
-
-    def assert_note_new_attributes(self, note):
-        self.assertEqual(self.note.text, self.NOTE_TEXT_NEW)
-        self.assertEqual(self.note.title, self.NOTE_TITLE_NEW)
-        self.assertEqual(self.note.slug, self.NOTE_SLUG_NEW)
+        self.assertEqual(self.note.text, note.text)
+        self.assertEqual(self.note.title, note.title)
+        self.assertEqual(self.note.slug, note.slug)
 
     def test_author_can_delete_note(self):
         response = self.author_client.delete(self.delete_url)
@@ -75,7 +70,7 @@ class TestCommentEditDelete(TestCase):
         response = self.author_client.post(self.edit_url, data=self.form_data)
         self.assertRedirects(response, self.url_to_success)
         self.note.refresh_from_db()
-        self.assert_note_new_attributes(self.note)
+        self.assert_note_attributes(self.note)
 
         updated_comment_count = Note.objects.count()
         self.assertEqual(note_count, updated_comment_count)

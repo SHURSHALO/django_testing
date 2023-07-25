@@ -10,7 +10,6 @@ from news.models import Comment, News
 def test_anonymous_user_cannot_comment(client, news):
     url = reverse('news:detail', args=[news.pk])
     news_count_before = News.objects.count()
-    response = client.post(url)
 
     response = client.post(url, data={'text': 'Комментарий от анонима'})
     assert response.status_code == HTTPStatus.FOUND
@@ -25,7 +24,6 @@ def test_anonymous_user_cannot_comment(client, news):
 @pytest.mark.django_db
 def test_authenticated_user_can_comment(author_client, news, author):
     url = reverse('news:detail', args=[news.pk])
-    response = author_client.post(url)
 
     response = author_client.post(
         url, data={'text': 'Комментарий от пользователя'}
@@ -52,7 +50,6 @@ def test_comment_warring_text_for_authenticated_user(author_client, news):
 @pytest.mark.django_db
 def test_authenticated_user_can_edit_comment(author_client, comment, author):
     url = reverse('news:edit', kwargs={'pk': comment.pk})
-    response = author_client.post(url)
 
     response = author_client.post(
         url,
@@ -76,18 +73,18 @@ def test_authenticated_user_can_edit_comment(author_client, comment, author):
 @pytest.mark.django_db
 def test_authenticated_user_can_delete_comment(author_client, comment, news):
     url = reverse('news:delete', kwargs={'pk': comment.pk})
-    response = author_client.get(url)
-    assert response.status_code == HTTPStatus.OK
-    assert 'comment' in response.context
 
     news_count_before = News.objects.count()
+    comment_count_before = Comment.objects.count()
 
     response = author_client.post(url)
     assert response.status_code == HTTPStatus.FOUND
 
     assert not Comment.objects.filter(pk=comment.pk).exists()
     news_count_after = News.objects.count()
+    comment_count_after = Comment.objects.count()
     assert news_count_after == news_count_before
+    assert comment_count_after == comment_count_before - 1
 
 
 @pytest.mark.django_db

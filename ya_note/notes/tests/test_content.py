@@ -1,7 +1,9 @@
+from http import HTTPStatus
+
 from django.urls import reverse
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from http import HTTPStatus
+
 from notes.models import Note
 from notes.forms import NoteForm
 
