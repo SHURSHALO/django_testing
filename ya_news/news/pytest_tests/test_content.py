@@ -1,6 +1,8 @@
-import pytest
 from http import HTTPStatus
+
+import pytest
 from django.urls import reverse
+
 from news.models import News
 from yanews.settings import NEWS_COUNT_ON_HOME_PAGE
 from news.forms import CommentForm
@@ -40,8 +42,7 @@ def test_comments_order_on_news_detail(client, comment):
 
     comment_list = response.context['object'].comment_set.all()
 
-    for i in range(1, len(comment_list)):
-        assert comment_list[i].created >= comment_list[i - 1].created
+    assert list(comment_list) == list(comment_list.order_by('created'))
 
 
 @pytest.mark.django_db
@@ -50,7 +51,6 @@ def test_comment_form_unavailable_for_anonymous_user(client, news):
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
     assert not isinstance(response.context.get('form'), CommentForm)
-    print(response.context.get('form'))
 
 
 @pytest.mark.django_db

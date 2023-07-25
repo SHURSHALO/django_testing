@@ -47,43 +47,49 @@ class TestCommentEditDelete(TestCase):
         }
         cls.url_to_success = '/done/'
 
-    def test_author_can_delete_comment(self):
+    def assert_note_attributes(self, note):
+        self.assertEqual(self.note.text, self.NOTE_TEXT)
+        self.assertEqual(self.note.title, self.NOTE_TITLE)
+        self.assertEqual(self.note.slug, self.NOTE_SLUG)
+
+    def assert_note_new_attributes(self, note):
+        self.assertEqual(self.note.text, self.NOTE_TEXT_NEW)
+        self.assertEqual(self.note.title, self.NOTE_TITLE_NEW)
+        self.assertEqual(self.note.slug, self.NOTE_SLUG_NEW)
+
+    def test_author_can_delete_note(self):
         response = self.author_client.delete(self.delete_url)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         note_count = Note.objects.count()
         self.assertEqual(note_count, 0)
 
-    def test_user_cant_delete_comment_of_another_user(self):
+    def test_user_cant_delete_note_of_another_user(self):
         response = self.reader_client.delete(self.delete_url)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
-        comments_count = Note.objects.count()
-        self.assertEqual(comments_count, 1)
+        note_count = Note.objects.count()
+        self.assertEqual(note_count, 1)
 
-    def test_author_can_edit_comment(self):
-        comments_count = Note.objects.count()
+    def test_author_can_edit_note(self):
+        note_count = Note.objects.count()
 
         response = self.author_client.post(self.edit_url, data=self.form_data)
         self.assertRedirects(response, self.url_to_success)
         self.note.refresh_from_db()
-        self.assertEqual(self.note.text, self.NOTE_TEXT_NEW)
-        self.assertEqual(self.note.title, self.NOTE_TITLE_NEW)
-        self.assertEqual(self.note.slug, self.NOTE_SLUG_NEW)
+        self.assert_note_new_attributes(self.note)
 
         updated_comment_count = Note.objects.count()
-        self.assertEqual(comments_count, updated_comment_count)
+        self.assertEqual(note_count, updated_comment_count)
 
-    def test_user_cant_edit_comment_of_another_user(self):
-        comments_count = Note.objects.count()
+    def test_user_cant_edit_note_of_another_user(self):
+        note_count = Note.objects.count()
 
         response = self.reader_client.post(self.edit_url, data=self.form_data)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.note.refresh_from_db()
-        self.assertEqual(self.note.text, self.NOTE_TEXT)
-        self.assertEqual(self.note.title, self.NOTE_TITLE)
-        self.assertEqual(self.note.slug, self.NOTE_SLUG)
+        self.assert_note_attributes(self.note)
 
         updated_comment_count = Note.objects.count()
-        self.assertEqual(comments_count, updated_comment_count)
+        self.assertEqual(note_count, updated_comment_count)
 
     def test_logged_in_user_can_create_note(self):
         Note.objects.all().delete()
