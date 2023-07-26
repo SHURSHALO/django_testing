@@ -70,7 +70,9 @@ class TestCommentEditDelete(TestCase):
         response = self.author_client.post(self.edit_url, data=self.form_data)
         self.assertRedirects(response, self.url_to_success)
         self.note.refresh_from_db()
-        self.assert_note_attributes(self.note)
+
+        updated_note = Note.objects.get(pk=self.note.pk)
+        self.assert_note_attributes(updated_note)
 
         updated_comment_count = Note.objects.count()
         self.assertEqual(note_count, updated_comment_count)
@@ -81,7 +83,9 @@ class TestCommentEditDelete(TestCase):
         response = self.reader_client.post(self.edit_url, data=self.form_data)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.note.refresh_from_db()
-        self.assert_note_attributes(self.note)
+
+        updated_note = Note.objects.get(pk=self.note.pk)
+        self.assert_note_attributes(updated_note)
 
         updated_comment_count = Note.objects.count()
         self.assertEqual(note_count, updated_comment_count)
